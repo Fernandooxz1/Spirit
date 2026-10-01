@@ -1,20 +1,34 @@
 package com.fernando.modding;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class BibleScreen extends Screen {
 
-    private int currentBookIndex = 0;
-    private int currentChapterIndex = 0;
-    private int scrollOffset = 0;
-    private int maxScroll = 0;
+    private int currentBookIndex = 0;      // 0 = Génesis
+    private int currentChapterIndex = 0;   // 0 = Capítulo 1
+    private int scrollOffset = 0;          // Desplazamiento vertical de versículos
+    private int maxScroll = 0;             // Límite máximo de scroll de versículos
 
-    private int bookScrollOffset = 0;
-    private int maxBookScroll = 0;
+    // Navegación de libros al costado (Sidebar)
+    private int bookScrollOffset = 0;      // Desplazamiento vertical de la lista de libros
+    private int maxBookScroll = 0;         // Límite de scroll de la lista de libros
     private static final int BOOK_ITEM_HEIGHT = 16;
+
+    // Detección de lectura y revelación (Epifanías)
+    private int readingTicksOnChapter = 0;
+    private int lastReadBookIndex = -1;
+    private int lastReadChapterIndex = -1;
+    private final Set<String> sessionDiscovered = new HashSet<>();
+    private long openTimeMillis = 0;
 
     public BibleScreen() {
         super(Component.literal("Santa Biblia"));
@@ -23,13 +37,16 @@ public class BibleScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+        openTimeMillis = System.currentTimeMillis();
 
         int centerX = this.width / 2;
 
+        // Botón "<" (Capítulo anterior)
         this.addRenderableWidget(Button.builder(Component.literal("<"), btn -> previousChapter())
                 .bounds(centerX - 150, 15, 20, 20)
                 .build());
 
+        // Botón ">" (Capítulo siguiente)
         this.addRenderableWidget(Button.builder(Component.literal(">"), btn -> nextChapter())
                 .bounds(centerX + 130, 15, 20, 20)
                 .build());
@@ -43,6 +60,7 @@ public class BibleScreen extends Screen {
             currentChapterIndex = BibleData.BOOKS.get(currentBookIndex).chapters().size() - 1;
         }
         scrollOffset = 0;
+        readingTicksOnChapter = 0;
     }
 
     private void nextChapter() {
@@ -54,6 +72,7 @@ public class BibleScreen extends Screen {
             currentChapterIndex = 0;
         }
         scrollOffset = 0;
+        readingTicksOnChapter = 0;
     }
 
     @Override
@@ -64,12 +83,14 @@ public class BibleScreen extends Screen {
         int sidebarWidth = 56;
         int sidebarX = Math.max(6, cardX - sidebarWidth - 8);
 
+        // Si el puntero está sobre la barra lateral de libros, scrolleamos los libros
         if (mouseX >= sidebarX && mouseX <= sidebarX + sidebarWidth) {
             int nuevoScroll = bookScrollOffset - (int) (scrollY * BOOK_ITEM_HEIGHT * 2);
             bookScrollOffset = Math.max(0, Math.min(nuevoScroll, maxBookScroll));
             return true;
         }
 
+        // Si está sobre la tarjeta de lectura, scrolleamos los versículos
         int nuevoScroll = scrollOffset - (int) (scrollY * 24);
         scrollOffset = Math.max(0, Math.min(nuevoScroll, maxScroll));
         return true;
@@ -77,7 +98,7 @@ public class BibleScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+        if (button == 0) { // Clic izquierdo
             int centerX = this.width / 2;
             int cardWidth = 320;
             int cardX = centerX - cardWidth / 2;
@@ -93,6 +114,7 @@ public class BibleScreen extends Screen {
                     currentBookIndex = clickedIndex;
                     currentChapterIndex = 0;
                     scrollOffset = 0;
+                    readingTicksOnChapter = 0;
                     return true;
                 }
             }
@@ -102,15 +124,26 @@ public class BibleScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        // Método vacío para neutralizar completamente el shader de desenfoque de Minecraft
+    }
+
+    @Override
+    public void onClose() {
+        long elapsedSec = (System.currentTimeMillis() - openTimeMillis) / 1000;
+        if (elapsedSec > 0) {
+            PacketDistributor.sendToServer(new DiscoverEpiphanyPayload("", (int) Math.min(3600, elapsedSec)));
+        }
+        super.onClose();
     }
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-
+        // 1. Oscurecimiento suave del fondo sin desenfoque molesto
         guiGraphics.fill(0, 0, this.width, this.height, 0x88000000);
 
         int centerX = this.width / 2;
 
+        // 2. Tarjeta central de lectura (fondo oscuro elegante con borde sutil)
         int cardWidth = 320;
         int cardHeight = this.height - 16;
         int cardX = centerX - cardWidth / 2;
@@ -125,6 +158,29 @@ public class BibleScreen extends Screen {
             return;
         }
 
+        // Detección de lectura y epifanías (100 ticks = 5 segundos)
+        if (lastReadBookIndex != currentBookIndex || lastReadChapterIndex != currentChapterIndex) {
+            lastReadBookIndex = currentBookIndex;
+            lastReadChapterIndex = currentChapterIndex;
+            readingTicksOnChapter = 0;
+        } else {
+            readingTicksOnChapter++;
+            if (readingTicksOnChapter == 100) {
+                var epiphanyOpt = EpiphanyRegistry.findByChapter(currentBookIndex, currentChapterIndex);
+                if (epiphanyOpt.isPresent()) {
+                    var epiphany = epiphanyOpt.get();
+                    if (!sessionDiscovered.contains(epiphany.id())) {
+                        sessionDiscovered.add(epiphany.id());
+                        PacketDistributor.sendToServer(new DiscoverEpiphanyPayload(epiphany.id(), 5));
+                        if (Minecraft.getInstance().player != null) {
+                            Minecraft.getInstance().player.playSound(SoundEvents.PLAYER_LEVELUP, 0.6f, 1.3f);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Barra lateral de libros al costado (Sidebar)
         int sidebarWidth = 56;
         int sidebarX = Math.max(6, cardX - sidebarWidth - 8);
         int sidebarY = 8;
@@ -168,12 +224,15 @@ public class BibleScreen extends Screen {
 
         guiGraphics.disableScissor();
 
+        // 4. Contenido del libro y capítulo actual
         var book = BibleData.BOOKS.get(currentBookIndex);
         var chapter = book.chapters().get(currentChapterIndex);
 
+        // Título dorado (ej: "Génesis 1")
         String title = book.name() + " " + (currentChapterIndex + 1);
         guiGraphics.drawCenteredString(this.font, title, centerX, 20, 0xFFD700);
 
+        // Área de recorte de versículos
         int margenIzquierdo = centerX - 140;
         int anchoTexto = 280;
         int areaYMin = 44;
@@ -181,9 +240,12 @@ public class BibleScreen extends Screen {
 
         guiGraphics.enableScissor(margenIzquierdo, areaYMin, margenIzquierdo + anchoTexto, areaYMax);
 
+        var chapterEpiphany = EpiphanyRegistry.findByChapter(currentBookIndex, currentChapterIndex);
+
         int y = areaYMin - scrollOffset;
 
         for (int v = 0; v < chapter.size(); v++) {
+            boolean isEpiphanyVerse = chapterEpiphany.isPresent() && (chapterEpiphany.get().verseIndex() == v);
             String numeroVersiculo = (v + 1) + ". ";
             String textoCompleto = numeroVersiculo + chapter.get(v);
 
@@ -191,11 +253,13 @@ public class BibleScreen extends Screen {
 
             for (var renglon : renglones) {
                 if (y + 10 >= areaYMin && y <= areaYMax) {
-                    guiGraphics.drawString(this.font, renglon, margenIzquierdo, y, 0xFFE0E0E0);
+                    // Si es un versículo clave con epifanía divina, brilla en dorado suave
+                    int color = isEpiphanyVerse ? 0xFFFFD700 : 0xFFE0E0E0;
+                    guiGraphics.drawString(this.font, renglon, margenIzquierdo, y, color);
                 }
                 y += 10;
             }
-            y += 5;
+            y += 5; // Separación entre versículos
         }
 
         int alturaTotalContenido = (y + scrollOffset) - areaYMin;
@@ -204,8 +268,10 @@ public class BibleScreen extends Screen {
 
         guiGraphics.disableScissor();
 
+        // 5. Botones interactivos < y >
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
+        // 6. Tooltip flotante al pasar el mouse por un libro
         if (hoveredBook != null) {
             guiGraphics.renderTooltip(this.font, Component.literal(hoveredBook.name()), (int) mouseX, (int) mouseY);
         }
