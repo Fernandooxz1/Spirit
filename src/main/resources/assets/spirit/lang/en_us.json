@@ -1,0 +1,12 @@
+{
+  "itemGroup.spirit": "Spirit",
+  "item.spirit.bible": "Santa Biblia",
+
+  "spirit.configuration.title": "Spirit Configs",
+  "spirit.configuration.section.spirit.common.toml": "Spirit Configs",
+  "spirit.configuration.section.spirit.common.toml.title": "Spirit Configs",
+  "spirit.configuration.items": "Item List",
+  "spirit.configuration.logDirtBlock": "Log Dirt Block",
+  "spirit.configuration.magicNumberIntroduction": "Magic Number Text",
+  "spirit.configuration.magicNumber": "Magic Number"
+}
