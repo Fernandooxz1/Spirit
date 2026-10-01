@@ -81,6 +81,8 @@ public class Spirit {
 
     private void registerPayloads(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar(MODID);
+
+        // 1. Descubrir epifanía (Client → Server)
         registrar.playToServer(
                 DiscoverEpiphanyPayload.TYPE,
                 DiscoverEpiphanyPayload.STREAM_CODEC,
@@ -88,23 +90,75 @@ public class Spirit {
                     context.enqueueWork(() -> {
                         Player player = context.player();
                         if (player != null) {
-                            PlayerDevotionData.addReadingTime(player, payload.readingSeconds());
+                            // Siempre contar tiempo de lectura (viene en onClose)
+                            if (payload.readingSeconds() > 0) {
+                                PlayerDevotionData.addReadingTime(player, payload.readingSeconds());
+                            }
+                            // Procesar epifanía solo si hay ID
                             if (!payload.epiphanyId().isEmpty()) {
                                 var epiphanyOpt = EpiphanyRegistry.findById(payload.epiphanyId());
                                 if (epiphanyOpt.isPresent()) {
                                     var epiphany = epiphanyOpt.get();
                                     boolean isNew = PlayerDevotionData.addDiscoveredVerse(player, epiphany.id());
-                                    BlessedEffect.applyOrExtendBlessed(player, 6000); // +5 minutos de Blessed
-                                    String msg = isNew ?
-                                            "§6✨ ¡Nueva Revelación! §e" + epiphany.citation() + " §8- §f" + epiphany.title() :
-                                            "§6✨ Revelación renovada (+5m): §e" + epiphany.citation();
-                                    player.displayClientMessage(Component.literal(msg), true);
+                                    if (isNew) {
+                                        // Solo aplicar Blessed para descubrimientos NUEVOS
+                                        BlessedEffect.applyOrExtendBlessed(player, 6000); // +5 minutos de Blessed
+                                        String msg = "§6✨ ¡Nueva Revelación! §e" + epiphany.citation() + " §8- §f" + epiphany.title();
+                                        player.displayClientMessage(Component.literal(msg), true);
+                                        // Sincronizar datos al cliente después de la revelación
+                                        sendDevotionSync(player);
+                                    }
                                 }
                             }
                         }
                     });
                 }
         );
+
+        // 2. Solicitar sincronización de devoción (Client → Server)
+        registrar.playToServer(
+                RequestDevotionSyncPayload.TYPE,
+                RequestDevotionSyncPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    context.enqueueWork(() -> {
+                        Player player = context.player();
+                        if (player != null) {
+                            sendDevotionSync(player);
+                        }
+                    });
+                }
+        );
+
+        // 3. Sincronización de devoción (Server → Client)
+        registrar.playToClient(
+                DevotionSyncPayload.TYPE,
+                DevotionSyncPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    context.enqueueWork(() -> {
+                        ClientDevotionCache.update(
+                                payload.discoveredVerses(),
+                                payload.totalReadingSeconds(),
+                                payload.devotionTier()
+                        );
+                    });
+                }
+        );
+    }
+
+    /**
+     * Envía los datos de devoción del jugador desde el servidor al cliente.
+     */
+    public static void sendDevotionSync(Player player) {
+        if (player == null || player.level().isClientSide()) return;
+        if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            var discovered = new java.util.ArrayList<>(PlayerDevotionData.getDiscoveredVerses(player));
+            long readingSeconds = PlayerDevotionData.getTotalReadingSeconds(player);
+            int tier = PlayerDevotionData.getDevotionTier(player);
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                    serverPlayer,
+                    new DevotionSyncPayload(discovered, readingSeconds, tier)
+            );
+        }
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
@@ -134,5 +188,10 @@ public class Spirit {
         if (event.isWasDeath()) {
             PlayerDevotionData.copyFrom(event.getOriginal(), event.getEntity());
         }
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        sendDevotionSync(event.getEntity());
     }
 }

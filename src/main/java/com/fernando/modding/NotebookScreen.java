@@ -4,14 +4,26 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class NotebookScreen extends Screen {
 
     private int scrollOffset = 0;
     private int maxScroll = 0;
+    private boolean syncRequested = false;
 
     public NotebookScreen() {
         super(Component.literal("Diario Espiritual"));
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        // Solicitar datos actualizados del servidor
+        if (!syncRequested) {
+            PacketDistributor.sendToServer(new RequestDevotionSyncPayload());
+            syncRequested = true;
+        }
     }
 
     @Override
@@ -47,9 +59,10 @@ public class NotebookScreen extends Screen {
             return;
         }
 
-        int discoveredCount = PlayerDevotionData.getDiscoveredVerses(player).size();
-        int tier = PlayerDevotionData.getDevotionTier(player);
-        long readingSeconds = PlayerDevotionData.getTotalReadingSeconds(player);
+        // Leer del cache del cliente (sincronizado desde el servidor)
+        int discoveredCount = ClientDevotionCache.getDiscoveredCount();
+        int tier = ClientDevotionCache.getDevotionTier();
+        long readingSeconds = ClientDevotionCache.getTotalReadingSeconds();
         long minutes = readingSeconds / 60;
         boolean hasBlessed = player.hasEffect(Spirit.BLESSED);
 
@@ -74,7 +87,8 @@ public class NotebookScreen extends Screen {
         int y = listYMin - scrollOffset;
 
         for (var epiphany : EpiphanyRegistry.EPIPHANIES) {
-            boolean isDiscovered = PlayerDevotionData.isVerseDiscovered(player, epiphany.id());
+            // Usar el cache del cliente en lugar del NBT del servidor
+            boolean isDiscovered = ClientDevotionCache.isVerseDiscovered(epiphany.id());
 
             // Caja de la entrada
             int entryHeight = isDiscovered ? 46 : 28;

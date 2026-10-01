@@ -79,9 +79,16 @@ public class BlessedEffect extends MobEffect {
                 needsUpdate = true;
             } else if (current.getDuration() < remainingDuration - 20) {
                 needsUpdate = true;
+            } else if (current.isVisible() || current.showIcon()) {
+                // El efecto existe pero es visible — necesita ser reemplazado por invisible
+                needsUpdate = true;
             }
 
             if (needsUpdate) {
+                // IMPORTANTE: Remover primero para que addEffect no haga merge con la versión visible
+                if (current != null) {
+                    entity.removeEffect(effectHolder);
+                }
                 MobEffectInstance subInst = new MobEffectInstance(
                         effectHolder,
                         remainingDuration,
