@@ -76,11 +76,28 @@ public class SpiritClient {
                         var epiphanyOpt = EpiphanyRegistry.findById(id);
                         if (epiphanyOpt.isPresent()) {
                             var e = epiphanyOpt.get();
-                            event.getTooltip().add(Component.literal(" §e• §f" + e.title() + " §7(§b" + e.citation() + "§7)"));
+                            String effName = e.effect().value().getDisplayName().getString();
+                            event.getTooltip().add(Component.literal(" §e• §f" + effName + " §7(§b" + e.citation() + "§7)"));
                         }
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Agrega el botón pestaña "✨ Bendiciones" en la parte superior del inventario.
+     */
+    @SubscribeEvent
+    public static void onScreenInit(net.neoforged.neoforge.client.event.ScreenEvent.Init.Post event) {
+        if (event.getScreen() instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen inv) {
+            int x = inv.getGuiLeft() + inv.getXSize() - 94;
+            int y = inv.getGuiTop() - 20;
+            net.minecraft.client.gui.components.Button btn = net.minecraft.client.gui.components.Button.builder(
+                    Component.literal("✨ Bendiciones"),
+                    b -> Minecraft.getInstance().setScreen(new NotebookScreen(NotebookScreen.TAB_BLESSINGS))
+            ).bounds(x, y, 94, 18).build();
+            event.addListener(btn);
         }
     }
 }

@@ -63,8 +63,8 @@ public class EpiphanyRegistry {
             // 5. Evangelios y Hechos
             new Epiphany("luke_authority", "Evangelios y Hechos", 41, "Lucas", 9, 18, 10, 19, MobEffects.DAMAGE_RESISTANCE, 6000, 1, "Potestad Inmune", "Lucas 10:19", "He aquí os doy potestad de hollar sobre las serpientes y sobre los escorpiones, y sobre toda fuerza del enemigo, y nada os dañará."),
             new Epiphany("john_bread_of_life", "Evangelios y Hechos", 42, "Juan", 5, 34, 6, 35, MobEffects.SATURATION, 6000, 1, "Pan de Vida", "Juan 6:35", "Y Jesús les dijo: Yo soy el pan de vida: el que á mí viene, nunca tendrá hambre; y el que en mí cree, no tendrá sed jamás."),
-            new Epiphany("john_light_of_world", "Evangelios y Hechos", 42, "Juan", 7, 11, 8, 12, MobEffects.NIGHT_VISION, 6000, 0, "Luz del Mundo", "Juan 8:12", "Y hablóles Jesús otra vez, diciendo: Yo soy la luz del mundo: el que me sigue, no andará en tinieblas, mas tendrá la lumbre de la vida."),
-            new Epiphany("acts_holy_spirit", "Evangelios y Hechos", 43, "Hechos", 0, 7, 1, 8, MobEffects.DAMAGE_BOOST, 6000, 1, "Poder del Espíritu", "Hechos 1:8", "Mas recibiréis la virtud del Espíritu Santo que vendrá sobre vosotros; y me sereís testigos en Jerusalem, en toda Judea, y Samaria, y hasta lo último de la tierra."),
+            new Epiphany("john_light_of_world", "Evangelios y Hechos", 42, "Juan", 7, 11, 8, 12, MobEffects.NIGHT_VISION, 6000, 0, "Luz del Mundo", "Juan 8:12", "Y habladoles Jesús otra vez, diciendo: Yo soy la luz del mundo: el que me sigue, no andará en tinieblas, mas tendrá la lumbre de la vida."),
+            new Epiphany("acts_holy_spirit", "Evangelios y Hechos", 43, "Hechos", 0, 7, 1, 8, MobEffects.DAMAGE_BOOST, 6000, 1, "Poder del Espíritu", "Hechos 1:8", "Mas recibiréis poder, cuando haya venido sobre vosotros el Espiritu Santo; y me sereís testigos en Jerusalem, en toda Judea, y Samaria, y hasta lo último de la tierra."),
 
             // 6. Epístolas Paulinas y Generales
             new Epiphany("romans_god_for_us", "Epístolas Paulinas y Generales", 44, "Romanos", 7, 30, 8, 31, MobEffects.ABSORPTION, 6000, 1, "Dios por Nosotros", "Romanos 8:31", "¿Pues qué diremos á esto? Si Dios por nosotros, ¿quién contra nosotros?"),
@@ -73,7 +73,7 @@ public class EpiphanyRegistry {
             new Epiphany("phil_christ_strengthens", "Epístolas Paulinas y Generales", 49, "Filipenses", 3, 12, 4, 13, MobEffects.DAMAGE_BOOST, 6000, 1, "Cristo me Fortalece", "Filipenses 4:13", "Todo lo puedo en Cristo que me fortalece."),
 
             // 7. Apocalipsis
-            new Epiphany("rev_river_of_life", "Apocalipsis", 65, "Apocalipsis", 21, 0, 22, 1, MobEffects.WATER_BREATHING, 6000, 0, "Río de Agua de Vida", "Apocalipsis 22:1", "DESPUÉS me mostró un río limpio de agua de vida, resplandeciente como cristal, que salía del trono de Dios y del Cordero.")
+            new Epiphany("rev_river_of_life", "Apocalipsis", 65, "Apocalipsis", 21, 0, 22, 1, MobEffects.WATER_BREATHING, 6000, 0, "Río de Agua de Vida", "Apocalipsis 22:1", "Después me mostró un río limpio de agua de vida, resplandeciente como cristal, que salía del trono de Dios y del Cordero.")
     );
 
     public static Optional<Epiphany> findByLocation(int bookIndex, int chapterIndex, int verseIndex) {

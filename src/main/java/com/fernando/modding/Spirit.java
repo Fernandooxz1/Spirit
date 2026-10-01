@@ -103,8 +103,22 @@ public class Spirit {
                                     if (isNew) {
                                         // Solo aplicar Blessed para descubrimientos NUEVOS
                                         BlessedEffect.applyOrExtendBlessed(player, 6000); // +5 minutos de Blessed
-                                        String msg = "§6✨ ¡Nueva Revelación! §e" + epiphany.citation() + " §8- §f" + epiphany.title();
-                                        player.displayClientMessage(Component.literal(msg), true);
+
+                                        String effectName = epiphany.effect().value().getDisplayName().getString();
+                                        String chatMsg = "§6✨ ¡Nueva Revelación! §e" + epiphany.citation() + " §8- §f" + epiphany.title() + " §b[+" + effectName + "]";
+                                        player.sendSystemMessage(Component.literal(chatMsg));
+
+                                        // Enviar título y subtítulo en pantalla durante 10 segundos (200 ticks de permanencia)
+                                        if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                                            serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket(10, 200, 20));
+                                            serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket(
+                                                    Component.literal("§6✨ ¡NUEVA REVELACIÓN! ✨")
+                                            ));
+                                            serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket(
+                                                    Component.literal("§e" + epiphany.citation() + " §8- §f" + epiphany.title() + " §b(+" + effectName + ")")
+                                            ));
+                                        }
+
                                         // Sincronizar datos al cliente después de la revelación
                                         sendDevotionSync(player);
                                     }
