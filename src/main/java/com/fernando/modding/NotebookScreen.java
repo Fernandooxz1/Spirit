@@ -29,7 +29,7 @@ public class NotebookScreen extends Screen {
     }
 
     public NotebookScreen(int initialTab) {
-        super(Component.literal("Diario Espiritual"));
+        super(Component.translatable("item.spirit.notebook"));
         this.currentTab = initialTab;
     }
 
@@ -109,11 +109,16 @@ public class NotebookScreen extends Screen {
         int discoveredCount = ClientDevotionCache.getDiscoveredCount();
         int tier = ClientDevotionCache.getDevotionTier();
         long readingSeconds = ClientDevotionCache.getTotalReadingSeconds();
-        long minutes = readingSeconds / 60;
         boolean hasBlessed = player.hasEffect(Spirit.BLESSED);
 
         // Título del Diario
-        guiGraphics.drawCenteredString(this.font, "DIARIO ESPIRITUAL", centerX, cardY + 8, 0xFFD700);
+        guiGraphics.drawCenteredString(this.font, "DIARIO ESPIRITUAL", centerX, cardY + 7, 0xFFD700);
+
+        // Barra de estadísticas del lector
+        String statsBar = "§7Revelaciones: §e" + discoveredCount + "/" + EpiphanyRegistry.EPIPHANIES.size() +
+                " §8| §7Lectura: §f" + formatReadingTime(readingSeconds) +
+                " §8| §7Rango: " + (tier >= 2 ? "§6Blessed II" : "§bBlessed I");
+        guiGraphics.drawCenteredString(this.font, statsBar, centerX, cardY + 17, 0xCCCCCC);
 
         // Separador debajo de las pestañas
         guiGraphics.fill(cardX + 16, cardY + 52, cardX + cardWidth - 16, cardY + 53, 0xFF333333);
@@ -181,10 +186,17 @@ public class NotebookScreen extends Screen {
                     String timeFormatted = String.format("%d:%02d", secRemaining / 60, secRemaining % 60);
 
                     guiGraphics.drawString(this.font, "§6Estado de Gracia: §aBLESSED " + (tier >= 2 ? "II" : "I"), contentX + 6, y + 5, 0xFFFFFF);
-                    guiGraphics.drawString(this.font, "§7Duración restante: §e" + timeFormatted + " §8| §7Lectura total: §f" + minutes + "m", contentX + 6, y + 18, 0xCCCCCC);
+                    if (tier >= 2) {
+                        guiGraphics.drawString(this.font, "§e★ DEVOCIÓN MÁXIMA", contentX + contentWidth - 110, y + 5, 0xFFFF55);
+                    } else {
+                        guiGraphics.drawString(this.font, "§8(Nivel II: 2h y 15 vers.)", contentX + contentWidth - 120, y + 5, 0x888888);
+                    }
+                    guiGraphics.drawString(this.font, "§7Duración restante: §e" + timeFormatted + " §8| §7Lectura total: §f" + formatReadingTime(readingSeconds), contentX + 6, y + 18, 0xCCCCCC);
                 } else {
                     guiGraphics.drawString(this.font, "§6Estado de Gracia: §cINACTIVO", contentX + 6, y + 5, 0xFFFFFF);
-                    guiGraphics.drawString(this.font, "§7Lee las Escrituras en la Santa Biblia para activar Blessed.", contentX + 6, y + 18, 0xAAAAAA);
+                    String rankBadge = (tier >= 2 ? "§6Rango: Blessed II" : "§7Rango: Blessed I");
+                    guiGraphics.drawString(this.font, rankBadge, contentX + contentWidth - 95, y + 5, 0xFFFFFF);
+                    guiGraphics.drawString(this.font, "§7Lectura total: §f" + formatReadingTime(readingSeconds) + " §8| §7Lee la Biblia para activar dones.", contentX + 6, y + 18, 0xAAAAAA);
                 }
             }
             y += statusHeight + 6;
@@ -238,5 +250,21 @@ public class NotebookScreen extends Screen {
 
         // Renderizar botones de pestañas
         super.render(guiGraphics, mouseX, mouseY, partialTick);
+    }
+
+    /**
+     * Formats reading time in seconds cleanly into human-readable hours/minutes (e.g. "1h 30m", "45m", "30s").
+     */
+    public static String formatReadingTime(long totalSeconds) {
+        if (totalSeconds <= 0) return "0m";
+        long hours = totalSeconds / 3600;
+        long mins = (totalSeconds % 3600) / 60;
+        if (hours > 0) {
+            return mins > 0 ? (hours + "h " + mins + "m") : (hours + "h");
+        } else if (mins > 0) {
+            return mins + "m";
+        } else {
+            return totalSeconds + "s";
+        }
     }
 }

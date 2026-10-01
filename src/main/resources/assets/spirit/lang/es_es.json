@@ -1,0 +1,16 @@
+{
+  "itemGroup.spirit": "Espíritu",
+  "item.spirit.bible": "Santa Biblia",
+  "item.spirit.bible.tooltip": "Haz clic derecho para abrir las Sagradas Escrituras.",
+  "item.spirit.notebook": "Diario Espiritual",
+  "item.spirit.notebook.tooltip": "Haz clic derecho para ver tus revelaciones y bendiciones.",
+  "effect.spirit.blessed": "Blessed",
+
+  "spirit.configuration.title": "Configuración de Spirit",
+  "spirit.configuration.section.spirit.common.toml": "Configuración de Spirit",
+  "spirit.configuration.section.spirit.common.toml.title": "Configuración de Spirit",
+  "spirit.configuration.items": "Lista de Objetos",
+  "spirit.configuration.logDirtBlock": "Registrar Bloque de Tierra en Registro",
+  "spirit.configuration.magicNumberIntroduction": "Texto de Introducción del Número Mágico",
+  "spirit.configuration.magicNumber": "Número Mágico"
+}

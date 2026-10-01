@@ -46,7 +46,7 @@ displayName="${mod_name}" #mandatory
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-Example mod description.
+Mod espiritual para Minecraft. Incluye la Santa Biblia completa con los 66 libros canónicos, el Diario Espiritual para registrar revelaciones y un sistema de bendiciones y dones divinos.
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.

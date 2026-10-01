@@ -30,7 +30,7 @@ public class BibleScreen extends Screen {
     private int readingTicksOnChapter = 0;
     private int lastReadBookIndex = -1;
     private int lastReadChapterIndex = -1;
-    private boolean epiphanyVerseVisible = false;
+    private EpiphanyRegistry.Epiphany activeVisibleEpiphany = null;
     private long openTimeMillis = 0;
 
     // Notificación en pantalla de nueva revelación (10 segundos = 200 ticks)
@@ -38,14 +38,14 @@ public class BibleScreen extends Screen {
     private int notificationTicks = 0;
 
     public BibleScreen() {
-        super(Component.literal("Santa Biblia"));
+        super(Component.translatable("item.spirit.bible"));
     }
 
     @Override
     protected void init() {
         super.init();
         openTimeMillis = System.currentTimeMillis();
-        epiphanyVerseVisible = false;
+        activeVisibleEpiphany = null;
         readingTicksOnChapter = 0;
 
         // Solicitar datos actualizados del servidor y pre-popular descubrimientos
@@ -74,7 +74,7 @@ public class BibleScreen extends Screen {
         }
         scrollOffset = 0;
         readingTicksOnChapter = 0;
-        epiphanyVerseVisible = false;
+        activeVisibleEpiphany = null;
     }
 
     private void nextChapter() {
@@ -87,7 +87,7 @@ public class BibleScreen extends Screen {
         }
         scrollOffset = 0;
         readingTicksOnChapter = 0;
-        epiphanyVerseVisible = false;
+        activeVisibleEpiphany = null;
     }
 
     @Override
@@ -130,7 +130,7 @@ public class BibleScreen extends Screen {
                     currentChapterIndex = 0;
                     scrollOffset = 0;
                     readingTicksOnChapter = 0;
-                    epiphanyVerseVisible = false;
+                    activeVisibleEpiphany = null;
                     return true;
                 }
             }
@@ -173,31 +173,30 @@ public class BibleScreen extends Screen {
             lastReadBookIndex = currentBookIndex;
             lastReadChapterIndex = currentChapterIndex;
             readingTicksOnChapter = 0;
-            epiphanyVerseVisible = false;
+            activeVisibleEpiphany = null;
         } else {
-            var epiphanyOpt = EpiphanyRegistry.findByChapter(currentBookIndex, currentChapterIndex);
-            if (epiphanyOpt.isPresent()) {
-                var epiphany = epiphanyOpt.get();
-                boolean alreadyDiscovered = sessionDiscovered.contains(epiphany.id()) || ClientDevotionCache.isVerseDiscovered(epiphany.id());
-
+            if (activeVisibleEpiphany != null) {
+                boolean alreadyDiscovered = sessionDiscovered.contains(activeVisibleEpiphany.id()) || ClientDevotionCache.isVerseDiscovered(activeVisibleEpiphany.id());
                 if (!alreadyDiscovered) {
-                    if (epiphanyVerseVisible) {
-                        readingTicksOnChapter++;
-                        if (readingTicksOnChapter >= 100) { // 100 ticks = 5 segundos viendo el versículo
-                            sessionDiscovered.add(epiphany.id());
-                            PacketDistributor.sendToServer(new DiscoverEpiphanyPayload(epiphany.id(), 0));
-                            if (Minecraft.getInstance().player != null) {
-                                Minecraft.getInstance().player.playSound(SoundEvents.PLAYER_LEVELUP, 0.6f, 1.3f);
-                            }
-                            // Notificación en pantalla por 10 segundos completos (200 ticks)
-                            activeNotificationEpiphany = epiphany;
-                            notificationTicks = 200;
+                    readingTicksOnChapter++;
+                    if (readingTicksOnChapter >= 100) { // 100 ticks = 5 segundos viendo el versículo
+                        EpiphanyRegistry.Epiphany unlocked = activeVisibleEpiphany;
+                        sessionDiscovered.add(unlocked.id());
+                        PacketDistributor.sendToServer(new DiscoverEpiphanyPayload(unlocked.id(), 0));
+                        if (Minecraft.getInstance().player != null) {
+                            Minecraft.getInstance().player.playSound(SoundEvents.PLAYER_LEVELUP, 0.6f, 1.3f);
                         }
-                    } else {
-                        // Si el usuario no ha scrolleado al versículo, se reinicia el tiempo de lectura
+                        // Notificación en pantalla por 10 segundos completos (200 ticks)
+                        activeNotificationEpiphany = unlocked;
+                        notificationTicks = 200;
                         readingTicksOnChapter = 0;
+                        activeVisibleEpiphany = null;
                     }
+                } else {
+                    readingTicksOnChapter = 0;
                 }
+            } else {
+                readingTicksOnChapter = 0;
             }
         }
     }
@@ -284,25 +283,32 @@ public class BibleScreen extends Screen {
 
         guiGraphics.enableScissor(margenIzquierdo, areaYMin, margenIzquierdo + anchoTexto, areaYMax);
 
-        var chapterEpiphany = EpiphanyRegistry.findByChapter(currentBookIndex, currentChapterIndex);
+        var chapterEpiphanies = EpiphanyRegistry.findAllByChapter(currentBookIndex, currentChapterIndex);
 
         int y = areaYMin - scrollOffset;
-        boolean foundEpiphanyVisible = false;
+        EpiphanyRegistry.Epiphany visibleCandidate = null;
 
         for (int v = 0; v < chapter.size(); v++) {
-            boolean isEpiphanyVerse = chapterEpiphany.isPresent() && (chapterEpiphany.get().verseIndex() == v);
-            boolean isDiscovered = isEpiphanyVerse && (sessionDiscovered.contains(chapterEpiphany.get().id()) || ClientDevotionCache.isVerseDiscovered(chapterEpiphany.get().id()));
+            EpiphanyRegistry.Epiphany thisEpiphany = null;
+            for (var ep : chapterEpiphanies) {
+                if (ep.verseIndex() == v) {
+                    thisEpiphany = ep;
+                    break;
+                }
+            }
+            boolean isEpiphanyVerse = (thisEpiphany != null);
+            boolean isDiscovered = isEpiphanyVerse && (sessionDiscovered.contains(thisEpiphany.id()) || ClientDevotionCache.isVerseDiscovered(thisEpiphany.id()));
             String numeroVersiculo = (v + 1) + ". ";
             String textoCompleto = numeroVersiculo + chapter.get(v);
 
             var renglones = this.font.split(Component.literal(textoCompleto), anchoTexto);
 
-            if (isEpiphanyVerse) {
+            if (isEpiphanyVerse && !isDiscovered) {
                 // Verificar si alguna línea del versículo de la revelación está dentro del viewport visible
                 for (int r = 0; r < renglones.size(); r++) {
                     int lineY = y + (r * 10);
                     if (lineY + 10 >= areaYMin && lineY <= areaYMax) {
-                        foundEpiphanyVisible = true;
+                        visibleCandidate = thisEpiphany;
                         break;
                     }
                 }
@@ -319,7 +325,7 @@ public class BibleScreen extends Screen {
             y += 5; // Separación entre versículos
         }
 
-        epiphanyVerseVisible = foundEpiphanyVisible;
+        activeVisibleEpiphany = visibleCandidate;
 
         int alturaTotalContenido = (y + scrollOffset) - areaYMin;
         int alturaVentana = areaYMax - areaYMin;

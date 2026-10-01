@@ -45,7 +45,7 @@ El crecimiento espiritual lleva tiempo. El mod evalúa dos parámetros persisten
 | Nivel | Requisito de Devoción | Beneficio |
 | :--- | :--- | :--- |
 | **Blessed I** | Inicial | Dones en Nivel I (*Fuerza I, Regeneración I, Prisa I...*). |
-| **Blessed II** | 30+ minutos acumulados de lectura y al menos 5 versículos descubiertos | Todos los dones activos escalan a **Nivel II** (*Fuerza II, Regeneración II, Resistencia al Fuego II...*). |
+| **Blessed II** | 2+ horas (120 min) acumuladas de lectura y al menos 15 versículos descubiertos | Todos los dones activos escalan a **Nivel II** (*Fuerza II, Regeneración II, Resistencia al Fuego II...*). |
 
 ---
 

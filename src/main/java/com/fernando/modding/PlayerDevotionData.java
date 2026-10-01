@@ -24,9 +24,9 @@ public class PlayerDevotionData {
     public static final String KEY_DEVOTION_TIER = "devotionTier";
     public static final String KEY_ACTIVE_BLESSINGS = "activeBlessings";
 
-    // Devotion Tier 2 Requirements: 1800s (30 minutes) total reading + at least 5 discovered verses
-    public static final int TIER_2_REQUIRED_SECONDS = 1800;
-    public static final int TIER_2_REQUIRED_VERSES = 5;
+    // Devotion Tier 2 Requirements: 7200s (2 hours) total reading + at least 15 discovered verses
+    public static final int TIER_2_REQUIRED_SECONDS = 7200;
+    public static final int TIER_2_REQUIRED_VERSES = 15;
 
     // Non-persistent session reading ticks (resets on book close or disconnect)
     private static final Map<UUID, Integer> SESSION_READING_TICKS = new ConcurrentHashMap<>();
@@ -156,7 +156,7 @@ public class PlayerDevotionData {
     /**
      * Calculates the player's devotion tier:
      * - Tier 1: Initial (Blessed I)
-     * - Tier 2: 1800+ seconds (30m) reading + at least 5 discovered verses (Blessed II)
+     * - Tier 2: 7200+ seconds (2 hours) reading + at least 15 discovered verses (Blessed II)
      */
     public static int calculateDevotionTier(Player player) {
         if (player == null) return 1;
