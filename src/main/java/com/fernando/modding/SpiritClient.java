@@ -86,17 +86,17 @@ public class SpiritClient {
     }
 
     /**
-     * Agrega el botón pestaña "Bendiciones" en la parte superior del inventario.
+     * Agrega el botón pestaña "✨ Bendiciones" en la parte superior del inventario.
      */
     @SubscribeEvent
     public static void onScreenInit(net.neoforged.neoforge.client.event.ScreenEvent.Init.Post event) {
         if (event.getScreen() instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen inv) {
-            int x = inv.getGuiLeft() + inv.getXSize() - 94;
+            int x = inv.getGuiLeft() + inv.getXSize() - 96;
             int y = inv.getGuiTop() - 20;
             net.minecraft.client.gui.components.Button btn = net.minecraft.client.gui.components.Button.builder(
-                    Component.literal("Bendiciones"),
-                    b -> Minecraft.getInstance().setScreen(new NotebookScreen(NotebookScreen.TAB_BLESSINGS))
-            ).bounds(x, y, 94, 18).build();
+                    Component.literal("✨ Bendiciones"),
+                    b -> Minecraft.getInstance().setScreen(new BlessingsScreen())
+            ).bounds(x, y, 96, 18).build();
             event.addListener(btn);
         }
     }

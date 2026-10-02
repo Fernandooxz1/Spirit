@@ -2,9 +2,12 @@ package com.fernando.modding;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.Container;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -33,6 +36,7 @@ public class Spirit {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
     public static final DeferredRegister<MobEffect> MOB_EFFECTS = DeferredRegister.create(Registries.MOB_EFFECT, MODID);
+    public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS = DeferredRegister.create(Registries.RECIPE_SERIALIZER, MODID);
 
     // MOB EFFECTS
     public static final DeferredHolder<MobEffect, BlessedEffect> BLESSED = MOB_EFFECTS.register("blessed", BlessedEffect::new);
@@ -50,6 +54,16 @@ public class Spirit {
                     .stacksTo(1)
                     .rarity(Rarity.UNCOMMON))
     );
+
+    public static final DeferredItem<Bible> BIBLE_ITEM = BIBLE;
+    public static final DeferredItem<NotebookItem> NOTEBOOK_ITEM = NOTEBOOK;
+
+    // RECIPE SERIALIZERS
+    public static final DeferredHolder<RecipeSerializer<?>, SimpleCraftingRecipeSerializer<BibleCraftingRecipe>> BIBLE_RECIPE_SERIALIZER =
+            RECIPE_SERIALIZERS.register("crafting_special_bible", () -> new SimpleCraftingRecipeSerializer<>(BibleCraftingRecipe::new));
+
+    public static final DeferredHolder<RecipeSerializer<?>, SimpleCraftingRecipeSerializer<NotebookCraftingRecipe>> NOTEBOOK_RECIPE_SERIALIZER =
+            RECIPE_SERIALIZERS.register("crafting_special_notebook", () -> new SimpleCraftingRecipeSerializer<>(NotebookCraftingRecipe::new));
 
     // CREATIVE TABS
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> SPIRIT_TAB = CREATIVE_MODE_TABS.register("spirit_tab", () -> CreativeModeTab.builder()
@@ -69,6 +83,7 @@ public class Spirit {
         ITEMS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
         MOB_EFFECTS.register(modEventBus);
+        RECIPE_SERIALIZERS.register(modEventBus);
 
         NeoForge.EVENT_BUS.register(this);
         modEventBus.addListener(this::addCreative);
@@ -207,5 +222,32 @@ public class Spirit {
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         sendDevotionSync(event.getEntity());
+    }
+
+    @SubscribeEvent
+    public void onItemCrafted(PlayerEvent.ItemCraftedEvent event) {
+        if (event.getCrafting().is(BIBLE.get())) {
+            removeCraftingItems(event.getInventory(), Items.LEATHER, 6);
+            removeCraftingItems(event.getInventory(), Items.PAPER, 32);
+        } else if (event.getCrafting().is(NOTEBOOK.get())) {
+            removeCraftingItems(event.getInventory(), Items.LEATHER, 1);
+            removeCraftingItems(event.getInventory(), Items.PAPER, 9);
+        }
+    }
+
+    private void removeCraftingItems(Container inv, Item item, int amount) {
+        if (inv == null || amount <= 0) return;
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            if (amount <= 0) break;
+            ItemStack stack = inv.getItem(i);
+            if (stack.is(item)) {
+                int toTake = Math.min(amount, stack.getCount());
+                stack.shrink(toTake);
+                if (stack.isEmpty()) {
+                    inv.setItem(i, ItemStack.EMPTY);
+                }
+                amount -= toTake;
+            }
+        }
     }
 }
