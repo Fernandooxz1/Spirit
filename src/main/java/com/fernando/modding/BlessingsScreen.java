@@ -101,10 +101,8 @@ public class BlessingsScreen extends Screen {
                 guiGraphics.drawString(this.font, "§6Estado de Gracia: §aBLESSED " + (tier >= 2 ? "II" : "I"), contentX + 6, y + 6, 0xFFFFFF);
                 if (tier >= 2) {
                     guiGraphics.drawString(this.font, "§e★ DEVOCIÓN MÁXIMA", contentX + contentWidth - 110, y + 6, 0xFFFF55);
-                } else {
-                    guiGraphics.drawString(this.font, "§8(Nivel II: 2h y 15 vers.)", contentX + contentWidth - 120, y + 6, 0x888888);
                 }
-                guiGraphics.drawString(this.font, "§7Duración restante: §e" + timeFormatted + " §8| §7Lectura total: §f" + NotebookScreen.formatReadingTime(readingSeconds), contentX + 6, y + 22, 0xCCCCCC);
+                guiGraphics.drawString(this.font, "§7Duración restante: §e" + timeFormatted + " §8| §7        Lectura total: §f" + NotebookScreen.formatReadingTime(readingSeconds), contentX + 6, y + 22, 0xCCCCCC);
             } else {
                 guiGraphics.drawString(this.font, "§6Estado de Gracia: §cINACTIVO", contentX + 6, y + 6, 0xFFFFFF);
                 String rankBadge = (tier >= 2 ? "§6Rango: Blessed II" : "§7Rango: Blessed I");

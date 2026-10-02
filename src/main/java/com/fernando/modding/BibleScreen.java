@@ -33,9 +33,6 @@ public class BibleScreen extends Screen {
     private EpiphanyRegistry.Epiphany activeVisibleEpiphany = null;
     private long openTimeMillis = 0;
 
-    // Notificación en pantalla de nueva revelación (10 segundos = 200 ticks)
-    private EpiphanyRegistry.Epiphany activeNotificationEpiphany = null;
-    private int notificationTicks = 0;
 
     public BibleScreen() {
         super(Component.translatable("item.spirit.bible"));
@@ -162,13 +159,6 @@ public class BibleScreen extends Screen {
         super.tick();
         if (BibleData.BOOKS.isEmpty()) return;
 
-        if (notificationTicks > 0) {
-            notificationTicks--;
-            if (notificationTicks == 0) {
-                activeNotificationEpiphany = null;
-            }
-        }
-
         if (lastReadBookIndex != currentBookIndex || lastReadChapterIndex != currentChapterIndex) {
             lastReadBookIndex = currentBookIndex;
             lastReadChapterIndex = currentChapterIndex;
@@ -186,9 +176,6 @@ public class BibleScreen extends Screen {
                         if (Minecraft.getInstance().player != null) {
                             Minecraft.getInstance().player.playSound(SoundEvents.PLAYER_LEVELUP, 0.6f, 1.3f);
                         }
-                        // Notificación en pantalla por 10 segundos completos (200 ticks)
-                        activeNotificationEpiphany = unlocked;
-                        notificationTicks = 200;
                         readingTicksOnChapter = 0;
                         activeVisibleEpiphany = null;
                     }
@@ -335,23 +322,6 @@ public class BibleScreen extends Screen {
 
         // 5. Botones interactivos < y >
         super.render(guiGraphics, mouseX, mouseY, partialTick);
-
-        // 6. Banner flotante de revelación (dura 10 segundos completos)
-        if (notificationTicks > 0 && activeNotificationEpiphany != null) {
-            int bannerW = 270;
-            int bannerH = 40;
-            int bannerX = centerX - bannerW / 2;
-            int bannerY = this.height - 48;
-
-            guiGraphics.fill(bannerX, bannerY, bannerX + bannerW, bannerY + bannerH, 0xF5181405);
-            guiGraphics.renderOutline(bannerX, bannerY, bannerW, bannerH, 0xFFFFD700);
-
-            guiGraphics.drawCenteredString(this.font, "✨ ¡NUEVA REVELACIÓN BÍBLICA! ✨", centerX, bannerY + 5, 0xFFFFD700);
-            String cit = "§e" + activeNotificationEpiphany.citation() + " §8- §f" + activeNotificationEpiphany.title();
-            guiGraphics.drawCenteredString(this.font, cit, centerX, bannerY + 16, 0xFFFFFF);
-            String eff = "§7Efecto otorgado: §b" + activeNotificationEpiphany.effect().value().getDisplayName().getString();
-            guiGraphics.drawCenteredString(this.font, eff, centerX, bannerY + 27, 0x55FFFF);
-        }
 
         // 7. Tooltip flotante al pasar el mouse por un libro
         if (hoveredBook != null) {
